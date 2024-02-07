@@ -1,5 +1,5 @@
 # cluster-wiki
 
-_in progress_
+https://wiki.sachiniyer.com
 
 A wiki to document my cluster
