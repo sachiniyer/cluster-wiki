@@ -1,6 +1,16 @@
 # Networking
 
-This is the heart of this project. The main motivation for remaking this cluster was to create something that I could move from place to place with me very easily.
+## Overview
+
+This is the heart of this project. The main motivation for remaking this cluster was to create something that I could move from place to place with me very easily, and my networking configuration enables that. Overally, each node connects through a P2P wireguard connection.
+
+```
+                        |--> Devocion
+                        |--> Sey
+Tunnel --> Herkimer --> +
+                        |--> Milstead
+                        |--> CoffeeProject
+```
 
 ## Tailscale
 
@@ -24,7 +34,7 @@ Another cool thing about Tailscale is that I can still use their DERP and relay 
 
 #### Entrance Nodes
 
-This is the term that I started using for traffic that comes into the cluster. These nodes need a public IP and basically do an nginx proxy_pass. I use an ec2 instance for this purpose. I may swich back to a machine with port-forwarding if I find a place that I can get a public IP with.
+This is the term that I started using for traffic that comes into the cluster. These nodes need a public IP and basically do an nginx `proxy_pass`. I use an ec2 instance for this purpose. I may switch back to a machine with port-forwarding if I find a place that I can get a public IP with.
 
 Another way to do this would be to just configure IP tables to pass the packets from the public IP to the tailscale IP. I don't do this however, because I want to validate it as an HTTP request first. I also prefer to configure nginx and route based on domain name instead of blindly forwarding packets.
 
@@ -32,15 +42,15 @@ You can actually visit a couple of non-cluster machines that are connected to th
 
 #### Exit Nodes
 
-This is the tailscale term for machines that advertise themselves as being able to forward your traffic through them. I actually use [a rapsberry pi](https://playground.sachiniyer.com) for this purpose. ~~I also connect that raspberry pi to my preferred VPN, so that anytime I want a VPN connection, I don't have to use an external application. I can also add a VPN connection very quickly to any node just by configuring it to use the exit node.~~ I put VPNs on the cluster itself so it is a lot easier to choose which ones I want. I also am considering putting exit nodes directly on the cluster.
+This is the tailscale term for machines that advertise themselves as being able to forward your traffic through them. I actually use [a rapsberry pi](https://playground.sachiniyer.com) for this purpose. I am working on a good way to integrate Mullvad VPN with Headscale.
 
 #### TLS
 
-Handling TLS is a bit tricky. I prefer to do ssl termination on the cluster or end machine instead of the entrance node itself, This way, I can keep the traffic encrypted while traveling to machine as well as take advantage of cool tools like [cert-manager](https://cert-manager.io/). On nginx, you use a combination of proxy_pass and SNI (Server Name Indication) to get your packets going to the right place. You can also configure Traefik (my ingress of choice) and Nginx (my other ingress of choice) to accept proxy_passed packets. Also depending on the Load Balancer that you are using, you may have to configure that to accept proxy_passed packets as well.
+Handling TLS is a bit tricky. I prefer to do ssl termination on the cluster or end machine instead of the entrance node itself, This way, I can keep the traffic encrypted while traveling to machine as well as take advantage of cool tools like [cert-manager](https://cert-manager.io/). On nginx, you use a combination of `proxy_pass` and SNI (Server Name Indication) to get your packets going to the right place. You can also configure Traefik (my ingress of choice) and Nginx (my other ingress of choice) to accept `proxy_passed` packets. Also depending on the Load Balancer that you are using, you may have to configure that to accept `proxy_passed` packets as well.
 
 #### Domain Names
 
-Another requirement for this project was to be able to seperate internal and external tools. I do this through whitelisting domains at the entrance nodes. Instead of blindly forwarding all the traffic from \*.sachiniyer.com, I instead just forward the tools I want available to the world. Traffic that reaches the entrance nodes with those domains will be allowed into the tailnet.
+Another requirement for this project was to be able to separate internal and external tools. I do this through whitelisting domains at the entrance nodes. Instead of blindly forwarding all the traffic from \*.sachiniyer.com, I instead just forward the tools I want available to the world. Traffic that reaches the entrance nodes with those domains will be allowed into the tailnet. This is handled by a script that reads my dns configuration from AWS Route53.
 
 All traffic with other domains will have to be generated from inside the tailnet. You can make this easier with a quick change to resolv.conf to point traffic from your domain to the magicDNS of the cluster. This results in a clear separation of internal and external tools. You could also configure your dns record to only have the whitelisted domains as well.
 
@@ -48,16 +58,16 @@ All traffic with other domains will have to be generated from inside the tailnet
 
 As a couple of tips, it can be hard to keep the nginx config consistent among all of your entrance nodes, so what I recommend doing is keeping git as a source of truth, and do a cronjob that pulls from a git repo and automatically updates at whatever frequency that you would like. There may be a better way to do this with webhooks. I would also avoid keeping your nodes in restrictive networks, as this means that they use the relay servers as little as possible and you have faster speeds.
 
-## ~~Klipper (or ServiceLB)~~ MetalLB
+## MetalLB
 
-Load balancing is very cool. All load balancing communication happens through Tailscale MagicDNS. ~~I used to use MetalLB instead of the k3s default of klipper. However, Metallb would often overwrite my proxy_protocol packets, not allowing me to do TLS termination on the cluster. I was actually able to get Klipper working with a lot of ease.~~ I figured out the proxy protocol issues and am back on MetaLB. I am considering a switch to cilium because it has a much more interesting design pattern (eBPF-based load balancing).
+All my load balancing communication happens through Tailscale MagicDNS. You need to be wary about configuring MetalLB for `proxy_passed` packets. I am considering a switch to cilium because it has a much more interesting design pattern (eBPF-based load balancing).
 
 ## Traefik Ingress
 
-I made a similar switch from Nginx to Traefik for the same proxy_protocol reasoning. the Nginx ingress was not respecting my proxy_protocol packets, and somehow the Traefik ingress was really easy to configure and get working. I also started to like Traefik a lot more because it seems to play better with the more modern versions of kubernetes ($\ge$ 1.25).
+I made a similar switch from Nginx to Traefik for the same `proxy_protocol` reasoning. the Nginx ingress was not respecting my `proxy_protocol` packets, and somehow the Traefik ingress was really easy to configure and get working. I also started to like Traefik a lot more because it seems to play better with the more modern versions of kubernetes (> 1.25).
 
 ## Cert Manager
 
-In the previous iteration of this cluster, I fell in love with cert-manager. I desperately wanted to use it again. This was one of the main reasons for doing TLS termination on the cluster instead of the entrance nodes (and also that wildcard certificates are a bit insecure). I integrated cert-manager with Traefik and it works quite well. I love being able to spin up a cert easily and have ssl easily enabled. You can also use dns validation and keep your domains pointed to the Tailscale IPs.
+Cert Manager is great, and my main reason for doing TLS termination on the cluster instead of the entrance nodes (and also that wildcard certificates are a bit insecure). I integrated cert-manager with Traefik and it works quite well. I love being able to spin up a cert easily and have ssl easily enabled. You can also use dns validation and keep your domains pointed to the Tailscale IPs.
 
 
