@@ -38,11 +38,11 @@ This is the term that I started using for traffic that comes into the cluster. T
 
 Another way to do this would be to just configure IP tables to pass the packets from the public IP to the tailscale IP. I don't do this however, because I want to validate it as an HTTP request first. I also prefer to configure nginx and route based on domain name instead of blindly forwarding packets.
 
-You can actually visit a couple of non-cluster machines that are connected to the network through this entrance node, such as my [laptop](https://computer.sachiniyer.com) (if it is up), [Raspberry Pi 1](https://coffeesociety.sachiniyer.com), and [Raspberry Pi 2](https://playground.sachiniyer.com).
+You can actually visit a couple of non-cluster machines that are connected to the network through this entrance node, such as my [laptop](https://computer.sachiniyer.com) (if it is up), [Raspberry Pi 1](https://coffeesociety.sachiniyer.com), and [Raspberry Pi 2](https://playground.sachiniyer.com) (both raspberry pis died, so just the laptop is the only thing visible now).
 
 #### Exit Nodes
 
-This is the tailscale term for machines that advertise themselves as being able to forward your traffic through them. I actually use [a rapsberry pi](https://playground.sachiniyer.com) for this purpose. I am working on a good way to integrate Mullvad VPN with Headscale.
+This is the tailscale term for machines that advertise themselves as being able to forward your traffic through them. I actually use [a rapsberry pi](https://playground.sachiniyer.com) for this purpose (this is not available anymore, cause the pi died). I am working on a good way to integrate Mullvad VPN with Headscale.
 
 #### TLS
 

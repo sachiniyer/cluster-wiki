@@ -1,6 +1,8 @@
 # Applications
 
-These are the applications that are currently deployed. There are configs in [another repo](https://github.com/sachiniyer/k3s-configs).
+A current list of publically accessible applications is at https://sachiniyer.com/apps
+
+ Here are a few applications that are currently deployed. There are configs in [another repo](https://github.com/sachiniyer/k3s-configs).
 
 ## My website
 This is my personal website - <https://sachiniyer.com>
